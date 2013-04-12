@@ -1,4 +1,4 @@
-Redirects 404
+Redirect 404
 
 Introduction
 ==========================
