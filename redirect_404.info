@@ -1,0 +1,3 @@
+name = Redirect 404
+description = Redirects 404 allows you to specify a number of servers that should be attempted to be redirected to if a 404 (Page not found) error is encountered.
+core = 7.x
