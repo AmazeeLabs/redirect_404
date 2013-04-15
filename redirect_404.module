@@ -18,7 +18,7 @@ function redirect_404_settings() {
   $form['redirect_options']['redirect_404_servers'] = array(
     '#type' => 'textarea',
     '#title' => t('Legacy servers'),
-    '#description' => t('Please enter server addresses (ex: http://legacy.example.com). If you exclude the protocol, it will be preserved based on the current connection type. Enter one server per line, the order determines the preference. If you require the request URI to be a part of a longer address, use the [request_uri] token (ex: http://legacy.example.com/[request_uri]/index.html). '),
+    '#description' => t('Please enter server addresses (ex: http://legacy.example.com). If you exclude the protocol, it will be preserved based on the current connection type. Enter one server per line, the order determines the preference. If you require the request URI to be a part of a longer address, use the [request_uri] token (ex: http://legacy.example.com/[request_uri]/index.html). Please note that the resulting URI will be verified prior to the redirect. '),
     '#default_value' => variable_get('redirect_404_servers', ''),
   );
 
@@ -31,8 +31,8 @@ function redirect_404_settings() {
 
   $form['redirect_options']['redirect_404_redirect'] = array(
     '#type' => 'textfield',
-    '#title' => t('Simple redirect'),
-    '#description' => t('If no options above have resulted in a successful redirect, specify a path to redirect the user to. The Request URI is not included in this redirect.'),
+    '#title' => t('Direct redirect'),
+    '#description' => t('If no options above have resulted in a successful redirect, specify a path to redirect the user to (without checking if it results in a valid page). The Request URI is not included in this redirect, unless specified with the [request_uri] token (ex: http://legacy.example.com/[request_uri]).'),
     '#default_value' => variable_get('redirect_404_redirect', ''),
   );
 
@@ -178,7 +178,7 @@ function redirect_404() {
     $redirect_path = variable_get('redirect_404_redirect', '');
     if ($redirect_path) {
       $new_status = '302 Found';
-      $new_path = $redirect_path;
+      $new_path = str_replace('/[request_uri]', $request, $redirect_path);
     }
   }
   // If there is no status/path to use, see if a simple redirect is specified.

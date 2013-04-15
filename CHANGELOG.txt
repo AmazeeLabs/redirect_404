@@ -1,8 +1,12 @@
 Redirects 404 7.x
 ===================
-
 ===================
-Version 7.x-1.x
+Version 7.x-1.x-dev
+===================
+- Change simple redirect to include a Request URI (if specified via token)
+- Fix variable_del name for 'redirect_404_content'
+===================
+Version 7.x-1.0
 ===================
 - Review Issue #12 [#1950228] by chx: Remove extra parenthesis. 
 - Review Issue #10 [#1950228] by klausi: Remove check_markup from 
