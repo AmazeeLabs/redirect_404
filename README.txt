@@ -31,3 +31,8 @@ defined. You could also specify a site search URL as an option, so if you
 try to go to www.example.com/department and no servers are found that know 
 what to do with the request, the user is taken to the search results page 
 for department (example: www.example.com/search/department)
+
+Incompatibilities
+==========================
+- Requests which are handled with the Fast 404 module are not be handled by 
+Redirects 404. Fast 404 "runs first" and the handles the requests on its own.
