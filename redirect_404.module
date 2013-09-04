@@ -45,6 +45,14 @@ function redirect_404_settings() {
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
   );
 
+  $form['redirect_options']['redirect_404_save_redirect'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Save Redirect?'),
+    '#default_value' => variable_get('redirect_404_save_redirect', 0),
+    '#description' => t('Save a found 404 Redirect using the <a href="!url"> Redirect module</a>. If checked, new requests will not result in 404, but instead will be redirected.', array('!url' => url('admin/config/search/redirect'))),
+    '#access' => module_exists('redirect'),
+  );
+
   $form['nothing_found'] = array(
     '#type' => 'fieldset',
     '#title' => t('No redirect found options'),
@@ -138,8 +146,10 @@ function redirect_404() {
   $servers = explode("\n", variable_get('redirect_404_servers', ''));
   // Initialize the variables.
   $new_status = '';
+  $new_status_code = 0;
   $new_path = '';
   $request = request_uri();
+  $save_redirect = variable_get('redirect_404_save_redirect', 0);
   if ($request != '/redirect_404') {
     foreach ($servers as $server) {
       $path = (FALSE === strpos($server, '://')) ? $protocol . trim($server) : trim($server);
@@ -153,12 +163,14 @@ function redirect_404() {
       if ($header_info->code >= 200 && $header_info->code <= 250) {
         // We found the actual document on this server, set to 302 Found.
         $new_status = (isset($header_info->redirect_code)) ? $header_info->redirect_code . ' ' . $header_info->status_message : '302 Found';
+        $new_status_code = 302;
         $new_path = (isset($header_info->redirect_url)) ? ($header_info->redirect_url) : $path;
         break;
       }
       elseif ($header_info->code >= 300 && $header_info->code <= 308) {
         // No resource, but found another redirect, so follow the redirect.
         $new_status = $header_info->redirect_code . ' ' . $header_info->status_message;
+        $new_status_code = $header_info->redirect_code;
         $new_path = ($header_info->redirect_url) ? $header_info->redirect_url : $path;
         break;
       }
@@ -170,7 +182,10 @@ function redirect_404() {
     if ($search_path) {
       drupal_set_message(t('The page you were trying to navigate to could not be found. Below you will see search results which may help you find what you are looking for.'));
       $new_status = '302 Found';
+      $new_status_code = 302;
       $new_path = $search_path . '/' . trim(str_replace('/', ' ', $request));
+      // We do not save a search redirect.
+      $save_redirect = FALSE;
     }
   }
   // If there is no status/path to use, see if a simple redirect is specified.
@@ -178,6 +193,7 @@ function redirect_404() {
     $redirect_path = variable_get('redirect_404_redirect', '');
     if ($redirect_path) {
       $new_status = '302 Found';
+      $new_status_code = 302;
       $new_path = str_replace('/[request_uri]', $request, $redirect_path);
     }
   }
@@ -186,11 +202,24 @@ function redirect_404() {
     $redirect_path = variable_get('redirect_404_site_404', '');
     if ($redirect_path) {
       $new_status = '302 Found';
+      $new_status_code = 302;
       $new_path = url($redirect_path);
+      // We do not save a redirect path redirect.
+      $save_redirect = FALSE;
     }
   }
   // If there is a status and a path, we go there.
   if ($new_status && $new_path) {
+    if (module_exists('redirect') && $save_redirect) {
+      // Save to Redirect module system.
+      $redirect = new stdClass();
+      redirect_object_prepare($redirect, array(
+        'source' => ltrim($request, '/'),
+        'redirect' => $new_path,
+        'status_code' => $new_status_code,
+      ));
+      redirect_save($redirect);
+    }
     drupal_add_http_header('Status', $new_status);
     drupal_add_http_header('location', $new_path);
     drupal_exit($new_path);

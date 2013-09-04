@@ -1,8 +1,9 @@
 Redirects 404 7.x
 ===================
 ===================
-Version 7.x-1.x-dev
+Version 7.x-1.1
 ===================
+- [#2076963]: Redirect module integration; save confirmed redirects.
 - Change simple redirect to include a Request URI (if specified via token)
 - Fix variable_del name for 'redirect_404_content'
 ===================
