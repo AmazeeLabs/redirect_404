@@ -34,4 +34,5 @@ function redirect_404_uninstall() {
   variable_del('redirect_404_redirect');
   variable_del('redirect_404_title');
   variable_del('redirect_404_content');
+  variable_del('redirect_404_save_redirect');
 }
