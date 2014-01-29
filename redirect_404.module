@@ -53,6 +53,20 @@ function redirect_404_settings() {
     '#access' => module_exists('redirect'),
   );
 
+  $form['redirect_options']['redirect_404_redirect_code'] = array(
+    '#type' => 'select',
+    '#title' => t('Select a redirect code'),
+    '#description' => t('Select a redirect code to use when redirecting to other server (default: 302 Found). This setting will not be used when redirecting to "Search path" or "Direct redirect" (default 302 is used for them). More information about redirect and response codes can be found on <a href="http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection" target="_blank">Wikipedia</a>'),
+    '#default_value' => variable_get('redirect_404_redirect_code', '302'),
+    '#options' => array_map(get_t(), _redirect_404_redirect_codes()),
+  );
+
+  $form['redirect_options']['redirect_404_force_redirect_code'] = array(
+    '#title' => 'checkbox',
+    '#title' => t('Force redirect code'),
+    '#description' => t('When remote server also responds with a redirect, the redirect code is reused. For')
+  );
+
   $form['nothing_found'] = array(
     '#type' => 'fieldset',
     '#title' => t('No redirect found options'),
@@ -235,4 +249,19 @@ function redirect_404_help($path, $arg) {
     case 'admin/help#redirect_404':
       return t('Redirect 404 allows you to specify a number of servers that should be attempted to be redirected to if a 404 (Page not found) error is encountered. ');
   }
+}
+
+
+/**
+ *  Returns a list with all available redirect codes
+ *
+ * @return array
+ *   Keys are representing redirect code and array values are redirect statuses
+ */
+function _redirect_404_redirect_codes() {
+  return array(
+    301 => '301 Moved Permanently',
+    302 => '302 Found',
+    303 => '303 See Other',
+  );
 }
