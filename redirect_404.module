@@ -56,15 +56,16 @@ function redirect_404_settings() {
   $form['redirect_options']['redirect_404_redirect_code'] = array(
     '#type' => 'select',
     '#title' => t('Select a redirect code'),
-    '#description' => t('Select a redirect code to use when redirecting to other server (default: 302 Found). This setting will not be used when redirecting to "Search path" or "Direct redirect" (default 302 is used for them). More information about redirect and response codes can be found on <a href="http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection" target="_blank">Wikipedia</a>'),
+    '#description' => t('Select a redirect code to use when redirecting to a legacy server (default: 302 Found). This setting will not be used when redirecting to "Search path" or "Direct redirect" (default 302 is used for them). More information about redirect and response codes can be found on <a href="http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection" target="_blank">Wikipedia</a>'),
     '#default_value' => variable_get('redirect_404_redirect_code', '302'),
     '#options' => array_map(get_t(), _redirect_404_redirect_codes()),
   );
 
   $form['redirect_options']['redirect_404_force_redirect_code'] = array(
-    '#title' => 'checkbox',
+    '#type' => 'checkbox',
     '#title' => t('Force redirect code'),
-    '#description' => t('When remote server also responds with a redirect, the redirect code is reused. For')
+    '#description' => t('When legacy server responds with a redirect for the requested URI, the redirect code is reused. Check this box if you want override this behavior and always use the selected redirect code.'),
+    '#default_value' => variable_get('redirect_404_force_redirect_code', 0),
   );
 
   $form['nothing_found'] = array(
@@ -164,6 +165,9 @@ function redirect_404() {
   $new_path = '';
   $request = request_uri();
   $save_redirect = variable_get('redirect_404_save_redirect', 0);
+  $statuses = _redirect_404_redirect_codes();
+  $redirect_code = variable_get('redirect_404_redirect_code', '302');
+  $force_status = variable_get('redirect_404_force_redirect_code', 0);
   if ($request != '/redirect_404') {
     foreach ($servers as $server) {
       $path = (FALSE === strpos($server, '://')) ? $protocol . trim($server) : trim($server);
@@ -176,19 +180,21 @@ function redirect_404() {
       $header_info = drupal_http_request($path, array('method' => 'HEAD', 'timeout' => 2));
       if ($header_info->code >= 200 && $header_info->code <= 250) {
         // We found the actual document on this server, set to 302 Found.
-        $new_status = (isset($header_info->redirect_code)) ? $header_info->redirect_code . ' ' . $header_info->status_message : '302 Found';
-        $new_status_code = 302;
+        $new_status_code = isset($header_info->redirect_code) && !$force_status ? $header_info->redirect_code : $redirect_code;
         $new_path = (isset($header_info->redirect_url)) ? ($header_info->redirect_url) : $path;
         break;
       }
-      elseif ($header_info->code >= 300 && $header_info->code <= 308) {
+      elseif (!empty($header_info->redirect_code)) {
         // No resource, but found another redirect, so follow the redirect.
-        $new_status = $header_info->redirect_code . ' ' . $header_info->status_message;
-        $new_status_code = $header_info->redirect_code;
+        $new_status_code = $force_status ? $redirect_code : $header_info->redirect_code;
         $new_path = ($header_info->redirect_url) ? $header_info->redirect_url : $path;
         break;
       }
     }
+  }
+  // Generate the redirect code based on redirect code.
+  if ($new_status_code) {
+    $new_status = $statuses[$new_status_code];
   }
   // If there is no status/path to use, see if we are searching.
   if (!$new_status && !$new_path) {
@@ -263,5 +269,6 @@ function _redirect_404_redirect_codes() {
     301 => '301 Moved Permanently',
     302 => '302 Found',
     303 => '303 See Other',
+    307 => '307 Temporary Redirect'
   );
 }
