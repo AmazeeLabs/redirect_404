@@ -58,7 +58,7 @@ function redirect_404_settings() {
     '#title' => t('Select a redirect code'),
     '#description' => t('Select a redirect code to use when redirecting to a legacy server (default: 302 Found). This setting will not be used when redirecting to "Search path" or "Direct redirect" (default 302 is used for them). More information about redirect and response codes can be found on <a href="http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection" target="_blank">Wikipedia</a>'),
     '#default_value' => variable_get('redirect_404_redirect_code', '302'),
-    '#options' => array_map(get_t(), _redirect_404_redirect_codes()),
+    '#options' => array_map(get_t(), _redirect_404_redirect_options()),
   );
 
   $form['redirect_options']['redirect_404_force_redirect_code'] = array(
@@ -165,7 +165,7 @@ function redirect_404() {
   $new_path = '';
   $request = request_uri();
   $save_redirect = variable_get('redirect_404_save_redirect', 0);
-  $statuses = _redirect_404_redirect_codes();
+  $statuses = _redirect_404_redirect_options();
   $redirect_code = variable_get('redirect_404_redirect_code', '302');
   $force_status = variable_get('redirect_404_force_redirect_code', 0);
   if ($request != '/redirect_404') {
@@ -259,12 +259,12 @@ function redirect_404_help($path, $arg) {
 
 
 /**
- *  Returns a list with all available redirect codes
+ *  Returns a list with all available redirect codes and statuses
  *
  * @return array
  *   Keys are representing redirect code and array values are redirect statuses
  */
-function _redirect_404_redirect_codes() {
+function _redirect_404_redirect_options() {
   return array(
     301 => '301 Moved Permanently',
     302 => '302 Found',
